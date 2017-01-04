@@ -1,0 +1,203 @@
+<html>
+<head>
+	<style>
+		td {
+			float: right;	
+		}
+		td:first-child {
+			margin-left: 100px;
+			background-color: yellow;
+			padding: 10px
+		}
+
+		textarea {
+			margin: 10px 0px;
+			width: 100%;
+		}
+
+		button {
+			margin-top: 5px;
+		}
+
+		#sendMsgBtn {
+			width: 100%;
+			height: 40px;
+		}
+
+		#logoutBtn {
+			margin-bottom: 15px;
+		}
+
+		#messaging-field,
+		#input-field,
+		#logoutBtn {
+			display: none;
+		}
+
+
+		#login-state{
+			display: none;
+			text-align: center;
+			background-color: red;
+			line-height: 3.2;
+			margin-bottom: 10px;
+			height: 50px;
+			width: 100%;
+		}
+
+		.text-header {
+			font-weight: 700;
+			font-size: 20px;
+			list-style-type: none;
+ 			text-decoration: underline;
+		}
+	</style>
+</head>
+<body>
+	<h1>Open the console (cmd + opt + i)</h1>
+	<h5>* note use telewrap functions first because I abstracted out a lot of things. </h5>
+	<br />
+	<table>
+		<tr>
+			<td>
+				<div id="login-state">You are logged out</div>
+				<button id="logoutBtn" onclick="telewrap.logout();logoutState();">Log Out</button>
+				<div id="input-field">
+					Phone Number:
+					<br />
+					<input id="phone-number" type="text" name="name">
+					<br />
+					<button onclick="telewrap.getSendCode($('#phone-number').val());">Submit Number for Send Code</button>
+					<br />
+					<br />
+					Send Code:
+					<br />
+					<input id="send-code" type="text" name="name">
+					<br />
+					<button onclick="loginBtn();">Login with Send Code</button>
+				</div>
+
+				<div id="messaging-field">
+					<span>Enter Contact Name: </span>
+					<input id="contact-name" type="text" name="name"><br />
+					<textarea id="message-text" rows="10" cols="45" placeholder="Enter your message..."></textarea> <br />
+					<button id="sendMsgBtn" type="button" onclick="sendMsgBtn()">Send Message</button>
+				</div>
+			</td>
+			<td>
+				<ul id="telewrap" >	
+					<li class="text-header">telewrap functions</li>
+				</ul>
+			</td>
+			<td>
+				<ul id='telegramApi'>
+					<li class="text-header">telegramApi functions</li>
+				</ul>
+			</td>
+		</tr>
+	</table>
+
+
+
+
+
+
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+	<script type="text/javascript" src="javascripts/telegramApi.js"></script>
+	<script type="text/javascript" src="javascripts/telegramApiWrapper.js"></script>
+	<script src='https://code.responsivevoice.org/responsivevoice.js'></script>
+	<script src="//cdnjs.cloudflare.com/ajax/libs/annyang/2.6.0/annyang.min.js"></script>
+		
+	<script>
+		//UI LOGIC
+		telewrap.checkLogin(function(user){
+			if(user.id){
+				loginState();
+			} else {
+				logoutState();
+			}
+		});
+			
+
+		function loginState() {
+			$('#login-state').text('You are logged in!').css('background-color', 'green').show();
+			$('#messaging-field').show();
+			$('#logoutBtn').show();
+			$('#input-field').hide();
+
+
+		}
+		function logoutState(){
+			$('#login-state').text('You are logged out!').css('background-color', 'red').show();
+			$('#input-field').show();
+			$('#messaging-field').hide();
+			$('#logoutBtn').hide();
+
+
+
+		}
+		function loginBtn(){
+			telewrap.login($('#send-code').val(), function(){
+				loginState();
+				$('#send-code').val('');
+			});
+
+		}
+
+
+		//populate lists with public functions
+		for( key in telegramApi ){
+			$('#telegramApi').append('<li>'+key+'</li>');
+		}
+		for( key in telewrap) {
+			$('#telewrap').append('<li>'+key+'</li>');
+
+		}
+
+		//sending message through button 
+		var sendMsgBtn = function(){
+			var contact = $("#contact-name").val().replace(/\s/g,'');
+			var msgText = $("#message-text").val().trim();
+			telewrap.msgByName(contact.toLowerCase(), msgText.toLowerCase());
+
+			console.log('Name: ', contact);
+	    	console.log('Message: ', msgText);
+
+	    	// //reset
+	    	$("#contact-name").val('');
+		    $("#message-text").val('');
+		    this.blur();
+		}
+
+		$('#message-text').keypress(function (e) {
+	  		//enter for submit
+	  		if (e.which == 13) {
+			    sendMsgBtn();
+			    return false;    //<---- Add this line
+		    }
+		});
+
+
+		//sending message through voice command
+		if (annyang) { //HTML5 Speech Recognition
+		  // Let's define a command.
+		  var commands = {
+		    'Telegram :name *splat': function(name, message) {
+		    	console.log('Name: ', name);
+		    	console.log('Message: ', message);
+		    	$('#contact-name').val(name);
+		    	$('#message-text').val(message);
+
+		    	telewrap.msgByName(name.toLowerCase(), message.toLowerCase());
+		    }
+		  };
+
+		  annyang.addCommands(commands);
+		  annyang.start();
+		}
+	</script>
+
+</body>
+</html>
+
